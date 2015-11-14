@@ -1,0 +1,1 @@
+DotaMining.exe -id ids.txt
