@@ -1,0 +1,1 @@
+DotaMining.exe -data ids.txt data.csv
