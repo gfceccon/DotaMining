@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1447711008 source:c:\users\lucas\documents\github\dotamining\skilofolder\datasplitter\datasplitter.c
+	<stdlib.h>
+	<stdio.h>
+	<string.h>
+
