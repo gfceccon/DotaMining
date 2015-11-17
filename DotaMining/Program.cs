@@ -5,15 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.IO;
-using HtmlAgilityPack;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace DotaMining
 {
     class Program
     {
-        static StreamWriter writer = null;
-        static Dictionary<string, int> heroPos = new Dictionary<string, int>();
         static void GetIds(string idPath, string webPath, int MAX)
         {
             int id = 1815098661;
@@ -27,7 +25,8 @@ namespace DotaMining
                     str = ids.ReadLine();
                 }
                 ids.Close();
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
@@ -100,7 +99,8 @@ namespace DotaMining
                     }
                     str = ids.ReadLine();
                 }
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 str = ids.ReadLine();
@@ -151,7 +151,7 @@ namespace DotaMining
                         }
                         else if (matchResult.Success && matchResult.Groups.Count > 1)
                         {
-                            if(matchResult.Groups[1].Value.Equals("radiant"))
+                            if (matchResult.Groups[1].Value.Equals("radiant"))
                                 radiantVictory = true;
 
                             int heroCount = 0;
@@ -162,7 +162,7 @@ namespace DotaMining
                             {
                                 if (hero.Success && hero.Groups.Count > 1)
                                 {
-                                    radiantHeroesPos[heroCount] = heroPos[hero.Groups[1].Value];
+                                    radiantHeroesPos[heroCount] = heroesPos[hero.Groups[1].Value];
                                     heroCount++;
                                 }
                             }
@@ -174,7 +174,7 @@ namespace DotaMining
                                 {
                                     if (hero.Success && hero.Groups.Count > 1)
                                     {
-                                        direHeroesPos[heroCount] = heroPos[hero.Groups[1].Value];
+                                        direHeroesPos[heroCount] = heroesPos[hero.Groups[1].Value];
                                         heroCount++;
                                     }
                                 }
@@ -236,7 +236,7 @@ namespace DotaMining
                         }
                         else
                             fail = true;
-                        if(fail)
+                        if (fail)
                         {
                             Console.WriteLine(id + " FAIL");
                             writer.WriteLine(id + ",FAIL");
@@ -260,13 +260,80 @@ namespace DotaMining
             ids.Close();
             writer.Close();
         }
+
+        static void GetHeroes(string webPath)
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.CreateHttp(webPath);
+            request.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0";
+            request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+            request.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-us,en;q=0.5");
+            try
+            {
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    StreamReader htmlStream = new StreamReader(response.GetResponseStream());
+                    string json = htmlStream.ReadToEnd();
+                    dynamic jsonObject = JsonConvert.DeserializeObject(json);
+                    foreach (dynamic hero in jsonObject.result.heroes)
+                    {
+                        string heroName = hero.name;
+                        heroName = heroName.Replace("npc_dota_hero_", "").Replace('_', ' ');
+                        heroesId.Add(int.Parse(hero.id), heroName);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        static void GetItems(string webPath)
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.CreateHttp(webPath);
+            request.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0";
+            request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+            request.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-us,en;q=0.5");
+            try
+            {
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    StreamReader htmlStream = new StreamReader(response.GetResponseStream());
+                    string json = htmlStream.ReadToEnd();
+                    dynamic jsonObject = JsonConvert.DeserializeObject(json);
+                    foreach (dynamic item in jsonObject.result.items)
+                    {
+                        heroesId.Add(int.Parse(item.id), item.localized_name);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        static void GetDetails(string idPath, string webPath)
+        {
+
+        }
+
         static void Main(string[] args)
         {
             Array.Sort(heroes);
             for (int i = 0; i < heroes.Length; i++)
             {
-                heroPos.Add(heroes[i], i);
+                heroesPos.Add(heroes[i], i);
             }
+            string heroWebPath = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/?key={0}";
+            string itemWebPath = "https://api.steampowered.com/IEconDOTA2_570/GetGameItems/v0001/?key={0}&language={1}";
+
+            GetHeroes(string.Format(heroWebPath, KEY));
+            GetItems(string.Format(itemWebPath, KEY, LANG));
             //CABEÇALHO
             //Console.Write("id,status,skill,lobby,mode,");
             //for (int i = 0; i < heroes.Length; i++)
@@ -276,22 +343,32 @@ namespace DotaMining
             //Console.WriteLine("win");
 
             //GetDatas("ids.txt", "data.csv", "http://www.dotabuff.com/matches/");
-            if(args.Length > 0)
+            if (args.Length > 0)
                 switch (args[0])
                 {
                     case "-id":
-                        if(args.Length > 1)
+                        if (args.Length > 1)
                             GetIds(args[1], "http://www.dotabuff.com/matches/", 100000);
                         break;
                     case "-data":
                         if (args.Length > 2)
                             GetDatas(args[1], args[2], "http://www.dotabuff.com/matches/");
                         break;
+                    case "-detail":
+                        if (args.Length > 1)
+                            GetDetails(args[1], "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/?match_id={0}&key={1}");
+                        break;
                     default:
                         Console.WriteLine("Invalid commands. Try : -id <file_name>, -data <id_file_name> <data_file_name>");
                         break;
                 }
         }
+
+        static StreamWriter writer = null;
+        static Dictionary<string, int> heroesPos = new Dictionary<string, int>();
+        static Dictionary<int, string> heroesId = new Dictionary<int, string>();
+        static string KEY = "90C289139A71A2D83269DBF40C1AEDD1";
+        static string LANG = "en";
         static string[] heroes = {"anti mage",
         "axe",
         "crystal maiden",
