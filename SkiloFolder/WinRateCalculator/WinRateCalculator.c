@@ -4,6 +4,13 @@
 
 char *names[] = {"abaddon", "alchemist", "ancient apparition", "anti mage", "axe", "bane", "batrider", "beastmaster", "bloodseeker", "bounty hunter", "brewmaster", "bristleback", "broodmother", "centaur warrunner", "chaos knight", "chen", "clinkz", "clockwerk", "crystal maiden", "dark seer", "dazzle", "death prophet", "disruptor", "doom", "dragon knight", "drow ranger", "earth spirit", "earthshaker", "elder titan", "ember spirit", "enchantress", "enigma", "faceless void", "gyrocopter", "huskar", "invoker", "io", "jakiro", "juggernaut", "keeper of the light", "kunkka", "legion commander", "leshrac", "lich", "lifestealer", "lina", "lion", "lone druid", "luna", "lycan", "magnus", "medusa", "meepo", "mirana", "morphling", "naga siren", "natures prophet", "necrophos", "night stalker", "nyx assassin", "ogre magi", "omniknight", "oracle", "outworld devourer", "phantom assassin", "phantom lancer", "phoenix", "puck", "pudge", "pugna", "queen of pain", "razor", "riki", "rubick", "sand king", "shadow demon", "shadow fiend", "shadow shaman", "silencer", "skywrath mage", "slardar", "slark", "sniper", "spectre", "spirit breaker", "storm spirit", "sven", "techies", "templar assassin", "terrorblade", "tidehunter", "timbersaw", "tinker", "tiny", "treant protector", "troll warlord", "tusk", "undying", "ursa", "vengeful spirit", "venomancer", "viper", "visage", "warlock", "weaver", "windranger", "winter wyvern", "witch doctor", "wraith king", "zeus"};
 
+typedef struct ally
+{
+	int id;
+	int wins;
+	int losses;
+	double winrate;
+} ally;
 
 void readLine(char *line, FILE *stream)
 {
@@ -20,129 +27,80 @@ void readLine(char *line, FILE *stream)
 	line[i] = '\0';
 }
 
-void getArg(char *aux, char *arg, char *line, int arg_id)
+int cmp(const void *a, const void *b)
 {
-	int i = 0;
+	const ally *ia = a;
+	const ally *ib = b;
 
-	strcpy(aux, line);
-
-	aux = strtok(aux, ",");
-	while(i != arg_id)
-	{
-		aux = strtok(NULL, ",");
-		i++;
-	}
-
-	strcpy(arg, aux);
+	if(ia->winrate > ib->winrate)
+		return -1;
+	else if(ia->winrate < ib->winrate)
+		return 1;
+	else
+		return 0;
 }
 
 int main()
 {
-	FILE *fp_database;
 	FILE *fp_hero;
-	char match[300];
-	char valid_match;
-	char aux[300];
-	char arg[30];
 	char file_name[40];
-	char win;
+	char line[40];
+	ally allies[110];
 	int i, j;
-	int heroes[5];
+	int id;
+	double games;
 
-	fp_database = fopen("data.csv", "r");
 
 
-	readLine(match, fp_database);
-
-	while(strcmp(match, ""))
+	for(i = 0; i < 110; i++)
 	{
-		valid_match = 1;
-		for(i = 0, j = 0; i < 116; i++)
+		// clear allies array
+		for(j = 0; j < 110; j++)
 		{
-			if(!valid_match)
-			{
-				break;
-			}
-
-			getArg(aux, arg, match, i);
-			switch (i)
-			{
-				case 0:
-					printf("\nMatch ID: %s", arg);
-				break;
-
-				case 1:
-				{
-					if(strcmp(arg, "OK"))
-						valid_match = 0;
-					//printf("\nMatch Status: %s", arg);
-				}
-				break;
-
-				case 2:
-					//printf("\nMatch Bracket: %s", arg);
-				break;
-
-				case 3:
-					//printf("\nMatch Type: %s", arg);
-				break;
-
-				case 4:
-				{
-					if(!strcmp(arg, "Ability Draft"))
-					{
-						valid_match = 0;
-					}
-					//printf("\nGame Mode: %s", arg);
-				}
-				break;
-
-				case 115:
-					if(strcmp(arg, "0"))
-					{
-						win = 1;
-						//printf("\nVICTORY!");
-					}
-					else
-					{
-						win = 0;
-						//printf("\nDEFEAT!");
-					}
-				break;
-
-				default:
-					if(strcmp(arg, "0"))
-					{
-						heroes[j++] = i - 5;
-						//printf("\n%s", names[i - 5]);
-					}
-				break;
-			}
+			allies[j].id = j;
+			allies[j].wins = 0;
+			allies[j].losses = 0;
+			allies[j].winrate = 0.0;
 		}
 
-		if(!valid_match)
-		{
-			readLine(match, fp_database);
-			continue;
-		}
+		strcpy(file_name, names[i]);
+		strcat(file_name, ".txt");
 
-		for(i = 0; i < 5; i++)
-		{
-			strcpy(file_name, names[heroes[i]]);
-			strcat(file_name, ".txt");
-			fp_hero = fopen(file_name, "a");
+		fp_hero = fopen(file_name, "r");
 
-			for(j = 0; j < 5; j++)
+		readLine(line, fp_hero);
+		while(strcmp(line, ""))
+		{
+			id = atoi(strtok(line, " "));
+			if(!strcmp(strtok(NULL, " "), "win"))
 			{
-				if(win)
-					fprintf(fp_hero, "%d win\n", heroes[j]);
-				else
-					fprintf(fp_hero, "%d loss\n", heroes[j]);
+				allies[id].wins++;
 			}
-			fclose(fp_hero);
+			else
+			{
+				allies[id].losses++;
+			}
+			readLine(line, fp_hero);
 		}
 
-		readLine(match, fp_database);
+		for(j = 0; j < 110; j++)
+		{
+			games = allies[j].wins + allies[j].losses;
+			if(games > 0)
+				allies[j].winrate = allies[j].wins / games;
+			else
+				allies[j].winrate = 0.5;
+		}
+
+		qsort(allies, 110, sizeof(ally), cmp);
+
+		remove(file_name);
+		fp_hero = fopen(file_name, "w");
+
+		for(j = 0; j < 110; j++)
+		{
+			fprintf(fp_hero, "%d %lf\n", allies[j].id, allies[j].winrate);
+		}
 	}
 
 	return 0;
