@@ -1,0 +1,13 @@
+1516 ABANDON
+151 FAIL
+13312 OK
+11824 ALL PICK
+	8611 normal
+	1504 high
+	1651 very high
+	59 fail
+1488 OTHERS
+
+
+LEFT
+11520 All Pick any skill
