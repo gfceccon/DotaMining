@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1447886438 source:c:\users\lucas\documents\github\dotamining\skilofolder\weightcalculator\weightcalculator.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+

@@ -48,7 +48,7 @@ int main()
 	ally allies[110];
 	int i, j;
 	int id;
-	double games;
+	double games, maxgames = 0;
 
 
 
@@ -90,18 +90,26 @@ int main()
 				allies[j].winrate = allies[j].wins / games;
 			else
 				allies[j].winrate = 0.5;
+
+			if(games > maxgames && allies[j].id != i)
+			{
+				maxgames = games;
+			}
 		}
 
-		qsort(allies, 110, sizeof(ally), cmp);
+		qsort(allies, 110, sizeof(ally), cmp	);
 
 		remove(file_name);
 		fp_hero = fopen(file_name, "w");
 
 		for(j = 0; j < 110; j++)
 		{
-			fprintf(fp_hero, "%d %lf\n", allies[j].id, allies[j].winrate);
+			fprintf(fp_hero, "%d,%d,%lf\n", allies[j].wins + allies[j].losses, allies[j].id, allies[j].winrate);
 		}
 	}
+
+	printf("maxgames = %lf\n", maxgames);
+	getch();
 
 	return 0;
 }
